@@ -1,0 +1,75 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/cicd-demo
+
+jobs:
+
+  build-test-push:
+    name: Build · Test · Push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+            push: false 
+            tags: |
+                DOCKERHUB_USERNAME/devops-quiz-ai:latest 
+                DOCKERHUB_USERNAME/devops-quiz-ai:${{ github.sha }}
+
+      - name: Smoke test
+        run: |
+          docker run -d \
+            --name test-container \
+            -p 5000:5000 \
+            DOCKERHUB_USERNAME/devops-quiz-ai:latest
+
+          sleep 5
+
+          RESPONSE=$(curl -s http://localhost:5000/api/health)
+          echo "Response: $RESPONSE"
+
+          if [[ "$RESPONSE" != *"ok"* ]]; then
+            echo "Smoke test failed"
+            docker logs test-container
+            docker stop test-container
+            exit 1
+          fi
+
+          docker stop test-container
+
+      - name: Push image to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+            push: true
+            tags: |
+                DOCKERHUB_USERNAME/devops-quiz-ai:latest
+                DOCKERHUB_USERNAME/devops-quiz-ai:${{ github.sha }}
+
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: build-test-push
+    if: github.event_name == 'push'
+
+    steps:
+
+      - name: Trigger Render deploy
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_URL }}"
