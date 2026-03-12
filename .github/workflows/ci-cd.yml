@@ -30,15 +30,15 @@ jobs:
         with:
             push: false 
             tags: |
-                DOCKERHUB_USERNAME/devops-quiz-ai:latest 
-                DOCKERHUB_USERNAME/devops-quiz-ai:${{ github.sha }}
+                USERNAME/devops-quiz-ai:latest 
+                USERNAME/devops-quiz-ai:${{ github.sha }}
 
       - name: Smoke test
         run: |
           docker run -d \
             --name test-container \
             -p 5000:5000 \
-            DOCKERHUB_USERNAME/devops-quiz-ai:latest
+            USERNAME/devops-quiz-ai:latest
 
           sleep 5
 
@@ -60,8 +60,8 @@ jobs:
         with:
             push: true
             tags: |
-                DOCKERHUB_USERNAME/devops-quiz-ai:latest
-                DOCKERHUB_USERNAME/devops-quiz-ai:${{ github.sha }}
+                USERNAME/devops-quiz-ai:latest
+                USERNAME/devops-quiz-ai:${{ github.sha }}
 
   deploy:
     name: Deploy to Render
