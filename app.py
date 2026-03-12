@@ -1,3 +1,6 @@
+#Name: Mawada Ghalab
+#ID: 60306339
+
 from flask import Flask, request, jsonify, send_from_directory
 import db, ai, os
 
